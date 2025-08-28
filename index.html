@@ -26,11 +26,15 @@
       text-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
     #countdown {
-      font-size: 1.6rem;
-      font-weight: bold;
-      margin: 15px 0;
-      text-shadow: 0 0 10px rgba(0,0,0,0.4);
-    }
+	  font-size: 1.6rem;
+	  font-weight: bold;
+	  margin: 15px 0;
+	  text-shadow: 0 0 10px rgba(0,0,0,0.4);
+      line-height: 1.4;
+	}
+	@media (max-width: 600px) {
+	#countdown { font-size: 1.2rem; line-height: 1.4; }
+	}
     button {
       padding: 10px 16px;
       font-size: 1rem;
@@ -154,8 +158,8 @@
         const minutes = Math.floor((diff / (1000 * 60)) % 60);
         const seconds = Math.floor((diff / 1000) % 60);
 
-        document.getElementById("countdown").innerText =
-          `До дня рождения осталось: ${days}д ${hours}ч ${minutes}м ${seconds}с`;
+        document.getElementById("countdown").innerHTML =
+          `До дня рождения осталось:<br>${days}д ${hours}ч ${minutes}м ${seconds}с`;
       }
 
       updateCountdown();
