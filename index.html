@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ты милашка</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      color: #fff;
+      text-align: center;
+      overflow: hidden;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    #countdown {
+      font-size: 1.6rem;
+      font-weight: bold;
+      margin: 15px 0;
+      text-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      background: #ff4081;
+      color: white;
+      transition: 0.3s;
+      margin-top: 15px;
+    }
+    button:hover {
+      background: #f50057;
+      transform: scale(1.05);
+    }
+    input[type="date"] {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+    }
+    .emoji {
+      font-size: 1.8rem;
+      margin-top: 20px;
+      animation: bounce 1.5s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    #birthdayMessage {
+      display: none;
+      font-size: 2rem;
+      font-weight: bold;
+      margin-top: 20px;
+      animation: fadeIn 2s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+    /* 📱 Мобильная адаптация */
+    @media (max-width: 600px) {
+      h1 { font-size: 1.6rem; }
+      #countdown { font-size: 1.2rem; }
+      #birthdayMessage { font-size: 1.5rem; }
+      button { font-size: 0.9rem; padding: 8px 14px; }
+      .emoji { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎂 Сколько дней до твоего дня рождения?</h1>
+
+  <div id="setup">
+    <p>Выбери дату рождения:</p>
+    <input type="date" id="birthdayInput">
+    <br>
+    <button onclick="saveBirthday()">Сохранить</button>
+  </div>
+
+  <div id="countdownBox" style="display:none;">
+    <h2 id="countdown"></h2>
+    <button onclick="changeDate()">Изменить дату</button>
+    <div class="emoji">🎉🎈🎂</div>
+  </div>
+
+  <div id="birthdayMessage">🥳 С Днём рождения! 🎂🎉🎈</div>
+
+  <canvas id="confetti"></canvas>
+
+  <script>
+    function saveBirthday() {
+      const input = document.getElementById("birthdayInput").value;
+      if (!input) return alert("Выбери дату!");
+      localStorage.setItem("birthday", input);
+      startCountdown();
+    }
+
+    function changeDate() {
+      localStorage.removeItem("birthday");
+      document.getElementById("setup").style.display = "block";
+      document.getElementById("countdownBox").style.display = "none";
+      document.getElementById("birthdayMessage").style.display = "none";
+    }
+
+    function startCountdown() {
+      const birthdayStr = localStorage.getItem("birthday");
+      if (!birthdayStr) return;
+
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("countdownBox").style.display = "block";
+
+      function updateCountdown() {
+        const today = new Date();
+        const [year, month, day] = birthdayStr.split("-");
+        let birthDate = new Date(today.getFullYear(), month - 1, day, 0, 0, 0);
+
+        if (birthDate < today) {
+          birthDate = new Date(today.getFullYear() + 1, month - 1, day, 0, 0, 0);
+        }
+
+        const diff = birthDate - today;
+
+        if (diff <= 0) {
+          document.getElementById("countdownBox").style.display = "none";
+          document.getElementById("birthdayMessage").style.display = "block";
+          startConfetti();
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        document.getElementById("countdown").innerText =
+          `До дня рождения осталось: ${days}д ${hours}ч ${minutes}м ${seconds}с`;
+      }
+
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+
+    // Конфетти
+    function startConfetti() {
+      const canvas = document.getElementById("confetti");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const confetti = [];
+      for (let i = 0; i < 150; i++) {
+        confetti.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          r: Math.random() * 6 + 4,
+          d: Math.random() * 0.5 + 0.5,
+          color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+          tilt: Math.random() * 10 - 10
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confetti.forEach(c => {
+          ctx.beginPath();
+          ctx.fillStyle = c.color;
+          ctx.ellipse(c.x, c.y, c.r, c.r / 2, Math.random() * Math.PI, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+        update();
+      }
+
+      function update() {
+        confetti.forEach(c => {
+          c.y += c.d * 3;
+          c.x += Math.sin(c.tilt);
+          if (c.y > canvas.height) {
+            c.y = -10;
+            c.x = Math.random() * canvas.width;
+          }
+        });
+      }
+
+      setInterval(draw, 20);
+    }
+
+    // Автостарт
+    if (localStorage.getItem("birthday")) {
+      startCountdown();
+    }
+  </script>
+</body>
+</html>
