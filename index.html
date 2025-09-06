@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎂 Сколько дней до ДР?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <style>
+    :root {
+      --bg-1:#0b1220;
+      --bg-2:#0f1b31;
+      --card:#0e1626cc;
+      --muted:#7b8aa0;
+      --text:#dbe9ff;
+      --accent:#62a1ff;
+      --accent-2:#6cf3ff;
+      --ok:#6ee7a2;
+      --err:#ff6b9e;
+      --shadow: 0 20px 40px rgba(7,13,27,.35), inset 0 1px 0 rgba(255,255,255,.03);
+      --radius:18px;
+    }
+
+    body {
+      margin:0;
+      background: var(--bg-1);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      overflow:hidden;
+    }
+
+    canvas#bgCanvas{position:fixed; top:0; left:0; width:100%; height:100%; z-index:-2;}
+    canvas#waveCanvas{position:fixed; bottom:0; left:0; width:100%; height:200px; z-index:-1; pointer-events:none;}
+
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      text-align:center;
+      max-width:550px;
+      width:90%;
+      margin:20px;
+    }
+
+    h1 {
+      font-family:"JetBrains Mono", monospace;
+      font-weight:800;
+      font-size:28px;
+      margin-bottom:20px;
+      color:var(--accent);
+    }
+
+    #countdown {
+      font-size: 1.3rem;
+      font-weight:600;
+      margin: 18px 0;
+      color: var(--accent-2);
+      line-height:1.5;
+	  white-space: nowrap; /* 👈 запрещаем перенос */
+    }
+
+    input[type="date"] {
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(98,161,255,.35);
+      background:rgba(98,161,255,.12);
+      color:var(--text);
+      font-family:"JetBrains Mono", monospace;
+      font-size:15px;
+      outline:none;
+      transition:.3s;
+    }
+    input[type="date"]:focus {
+      background:rgba(98,161,255,.25);
+    }
+
+    button {
+      margin-top:14px;
+      padding:10px 18px;
+      border-radius:999px;
+      border:1px solid rgba(108,243,255,.35);
+      background:rgba(108,243,255,.12);
+      color:var(--accent-2);
+      font-family:"JetBrains Mono", monospace;
+      font-size:15px;
+      cursor:pointer;
+      transition:.2s;
+    }
+    button:hover { background:rgba(108,243,255,.25); }
+
+    .emoji { font-size:1.6rem; margin-top:16px; animation:bounce 1.5s infinite; }
+    @keyframes bounce {0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+    #birthdayMessage {
+      display:none;
+      font-size:1.6rem;
+      font-weight:700;
+      margin-top:20px;
+      color:var(--ok);
+      animation:fadeIn 1.5s ease-in-out;
+    }
+    @keyframes fadeIn {from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+
+    canvas#confetti {
+      position:fixed;
+      top:0;
+      left:0;
+      pointer-events:none;
+      z-index:99;
+    }
+
+    @media(max-width:600px){
+      h1{font-size:22px;}
+      #countdown{font-size:1.1rem;}
+      #birthdayMessage{font-size:1.3rem;}
+    }
+
+    /* Эффект зернистости */
+    body::after {
+      content:"";
+      position:fixed;
+      top:0;left:0;width:100%;height:100%;
+      pointer-events:none;
+      z-index:9999;
+      background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDAnIGhlaWdodD0nMTAwJz48ZmlsdGVyIGlkPSdub2lzZUZpbHRlcic+PGZlVHVyYnVsZW5jZSB0eXBlPSdmcmFjdGFsTm9pc2UnIGJhc2VGcmVxdWVuY3k9JzAuOTUnIG51bU9jdGF2ZXM9JzgnLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0nMTAwJScgaGVpZ2h0PScxMDAlJyBmaWx0ZXI9InVybCgjbm9pc2VGaWx0ZXIpIi8+PC9zdmc+");
+      opacity:.08;
+      animation:noiseMove 1s steps(8) infinite;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="waveCanvas"></canvas>
+
+  <div class="card" data-aos="fade-up">
+    <h1>🎂 Сколько дней до твоего ДР?</h1>
+
+    <div id="setup">
+      <p>Выбери дату рождения:</p>
+      <input type="date" id="birthdayInput">
+      <br>
+      <button onclick="saveBirthday()">Сохранить</button>
+    </div>
+
+    <div id="countdownBox" style="display:none;">
+      <div id="countdown"></div>
+      <button onclick="changeDate()">Изменить дату</button>
+      <div class="emoji">🎉🎈🎂</div>
+    </div>
+
+    <div id="birthdayMessage">🥳 С Днём рождения! 🎂🎉🎈</div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <script>AOS.init({duration:800, once:true});</script>
+
+  <script>
+    function saveBirthday() {
+      const input = document.getElementById("birthdayInput").value;
+      if (!input) return alert("Выбери дату!");
+      localStorage.setItem("birthday", input);
+      startCountdown();
+    }
+
+    function changeDate() {
+      localStorage.removeItem("birthday");
+      document.getElementById("setup").style.display = "block";
+      document.getElementById("countdownBox").style.display = "none";
+      document.getElementById("birthdayMessage").style.display = "none";
+    }
+
+    function startCountdown() {
+      const birthdayStr = localStorage.getItem("birthday");
+      if (!birthdayStr) return;
+
+      document.getElementById("setup").style.display = "none";
+      document.getElementById("countdownBox").style.display = "block";
+
+      function updateCountdown() {
+        const today = new Date();
+        const [year, month, day] = birthdayStr.split("-");
+        let birthDate = new Date(today.getFullYear(), month - 1, day, 0, 0, 0);
+
+        if (birthDate < today) {
+          birthDate = new Date(today.getFullYear() + 1, month - 1, day, 0, 0, 0);
+        }
+
+        const diff = birthDate - today;
+
+        if (diff <= 0) {
+          document.getElementById("countdownBox").style.display = "none";
+          document.getElementById("birthdayMessage").style.display = "block";
+          startConfetti();
+          return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+
+        document.getElementById("countdown").innerHTML =
+          `До дня рождения осталось:<br>${days}д ${hours}ч ${minutes}м ${seconds}с`;
+      }
+
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+
+    // Конфетти
+    function startConfetti() {
+      const canvas = document.getElementById("confetti");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const confetti = [];
+      for (let i = 0; i < 150; i++) {
+        confetti.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height - canvas.height,
+          r: Math.random() * 6 + 4,
+          d: Math.random() * 0.5 + 0.5,
+          color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+          tilt: Math.random() * 10 - 10
+        });
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        confetti.forEach(c => {
+          ctx.beginPath();
+          ctx.fillStyle = c.color;
+          ctx.ellipse(c.x, c.y, c.r, c.r / 2, Math.random() * Math.PI, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+        update();
+      }
+
+      function update() {
+        confetti.forEach(c => {
+          c.y += c.d * 3;
+          c.x += Math.sin(c.tilt);
+          if (c.y > canvas.height) {
+            c.y = -10;
+            c.x = Math.random() * canvas.width;
+          }
+        });
+      }
+
+      setInterval(draw, 20);
+    }
+
+    // Автостарт
+    if (localStorage.getItem("birthday")) {
+      startCountdown();
+    }
+
+    // Частицы фон
+    const canvasBg = document.getElementById('bgCanvas');
+    const ctxBg = canvasBg.getContext('2d');
+    let w,h,particles;
+    function resize(){
+      w=canvasBg.width=window.innerWidth;
+      h=canvasBg.height=window.innerHeight;
+      particles=[];
+      let count=window.innerWidth<600?30:80;
+      for(let i=0;i<count;i++){
+        particles.push({
+          x:Math.random()*w,
+          y:Math.random()*h,
+          dx:(Math.random()-0.5)*0.7,
+          dy:(Math.random()-0.5)*0.7,
+          r:Math.random()*2+1
+        });
+      }
+    }
+    function drawParticles(){
+      ctxBg.clearRect(0,0,w,h);
+      ctxBg.fillStyle='rgba(108,243,255,0.7)';
+      for(let p of particles){
+        ctxBg.beginPath(); ctxBg.arc(p.x,p.y,p.r,0,Math.PI*2); ctxBg.fill();
+        p.x+=p.dx; p.y+=p.dy;
+        if(p.x<0||p.x>w)p.dx*=-1; if(p.y<0||p.y>h)p.dy*=-1;
+      }
+      requestAnimationFrame(drawParticles);
+    }
+    window.addEventListener('resize', resize); resize(); drawParticles();
+
+    // Волны
+    const waveCanvas = document.getElementById("waveCanvas");
+    const wctx = waveCanvas.getContext("2d");
+    function resizeWave(){ waveCanvas.width=window.innerWidth; waveCanvas.height=200; }
+    window.addEventListener("resize", resizeWave); resizeWave();
+    let t=0;
+    function drawWave(){
+      wctx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+      function drawSingle(color,amp,speed,offset){
+        wctx.beginPath();
+        for(let x=0;x<waveCanvas.width;x++){
+          let y=100+Math.sin((x*0.02)+t*speed+offset)*amp;
+          wctx.lineTo(x,y);
+        }
+        wctx.lineTo(waveCanvas.width,waveCanvas.height);
+        wctx.lineTo(0,waveCanvas.height);
+        wctx.closePath();
+        wctx.fillStyle=color; wctx.fill();
+      }
+      drawSingle("rgba(98,161,255,0.2)",20,0.04,0);
+      drawSingle("rgba(108,243,255,0.15)",30,0.02,Math.PI/2);
+      t+=0.05;
+      requestAnimationFrame(drawWave);
+    }
+    drawWave();
+  </script>
+</body>
+</html>
